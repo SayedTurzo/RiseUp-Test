@@ -3,40 +3,30 @@ using UnityEngine;
 
 public class MagnetDynamic : MagnetBase
 {
-    public float moveDistance = 5f;       // Distance the object moves forward/backward along its local Z axis
-    public float moveDuration = 2f;       // Duration for moving the object the full distance
-
-    private Vector3 initialPosition;      // To store the starting position of the object
+    public float moveDistance = 5f;
+    public float moveDuration = 2f;
+    private Vector3 initialPosition;
 
     private void Start()
     {
-        // Store the initial position of the object to return to it after movement
         initialPosition = transform.position;
-
-        // Start the boomerang movement coroutine
         StartCoroutine(BoomerangMovement());
     }
-    
-    
+
     private void Update()
     {
         CheckForMagneticInteraction();
     }
 
-    // Coroutine for boomerang movement
     private IEnumerator BoomerangMovement()
     {
         while (true)
         {
-            // Move forward
             yield return MoveObject(initialPosition, initialPosition + transform.forward * moveDistance);
-
-            // Move backward
             yield return MoveObject(initialPosition + transform.forward * moveDistance, initialPosition);
         }
     }
 
-    // Coroutine to move the object from start position to target position over a specified duration
     private IEnumerator MoveObject(Vector3 startPos, Vector3 endPos)
     {
         float timeElapsed = 0f;
@@ -48,39 +38,37 @@ public class MagnetDynamic : MagnetBase
             yield return null;
         }
 
-        // Ensure the final position is exactly the target position
         transform.position = endPos;
     }
 
-    // Implementing the abstract method from MagnetBase to define how dynamic magnets interact
     protected override void CheckForMagneticInteraction()
     {
-        // Check for nearby objects in range and apply magnetic forces (similar to static magnets)
         Collider[] affectedObjects = Physics.OverlapSphere(transform.position, magnetRange, affectedLayers);
 
         foreach (Collider collider in affectedObjects)
         {
             if (collider.CompareTag("Player"))
             {
-                // Calculate the direction and apply force
-                Vector3 direction = collider.transform.position - transform.position;
-                ApplyMagneticForce(collider.gameObject, direction);
+                Vector3 surfaceNormal = (collider.transform.position - transform.position).normalized;
+                ApplyMagneticForce(collider.gameObject, surfaceNormal);
             }
         }
     }
 
-    private void ApplyMagneticForce(GameObject affectedObject, Vector3 direction)
+    private void ApplyMagneticForce(GameObject affectedObject, Vector3 surfaceNormal)
     {
-        direction.Normalize();
-        float forceMagnitude = 10f; // Force magnitude can be adjusted
+        PlayerController playerController = affectedObject.GetComponent<PlayerController>();
+        CharacterController controller = affectedObject.GetComponent<CharacterController>();
 
-        if (isNorthPole)
+        if (playerController != null && controller != null)
         {
-            affectedObject.GetComponent<Rigidbody>().AddForce(direction * forceMagnitude);
-        }
-        else
-        {
-            affectedObject.GetComponent<Rigidbody>().AddForce(-direction * forceMagnitude);
+            float forceMagnitude = 10f;
+            bool isAttractive = (isNorthPole == playerController.isNorthPole);
+
+            Vector3 force = isAttractive ? surfaceNormal * forceMagnitude : -surfaceNormal * forceMagnitude;
+            Vector3 movement = new Vector3(force.x, (playerController.GetYVelocity()-1f), force.z) * Time.deltaTime;  // No Y-axis influence
+
+            controller.Move(movement);
         }
     }
 }

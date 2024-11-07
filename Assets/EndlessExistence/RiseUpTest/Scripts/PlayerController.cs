@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class PlayerController : MonoBehaviour
 {
@@ -16,10 +18,16 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private MeshRenderer playerVisual;
     [SerializeField] private Material _northPoleMaterial;
     [SerializeField] private Material _southPoleMaterial;
+    
 
     private void Start()
     {
         gameManager = FindObjectOfType<GameManager>();
+        
+    }
+
+    private void OnEnable()
+    {
         StartCoroutine(ChangePole());
     }
 
@@ -27,6 +35,11 @@ public class PlayerController : MonoBehaviour
     {
         //HandleMovement(); // Handle player movement input
         ApplyGravity();   // Handle gravity and jumping logic
+    }
+    
+    public float GetYVelocity()
+    {
+        return charVelocity.y;
     }
 
     public void HandleMovement(float horizontalInput, float verticalInput)
