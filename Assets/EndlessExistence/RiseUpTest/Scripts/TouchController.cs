@@ -14,10 +14,10 @@ public class TouchController : MonoBehaviour
     [HideInInspector]
     public UnityEvent OnDoubleTapEvent;
 
-    [SerializeField] private float swipeThreshold = 10f; // Minimum distance for swipe
-    [SerializeField] private float doubleTapTime = 0.3f; // Time threshold for double-tap
+    [SerializeField] private float swipeThreshold = 10f;
+    [SerializeField] private float doubleTapTime = 0.3f;
     private Vector2 touchBeganPos;
-    [SerializeField] private int currentTouchId = -1;
+    private int currentTouchId = -1;
     private bool firstTapped;
     private bool tapActive;
     private float tapTimer;
@@ -29,54 +29,78 @@ public class TouchController : MonoBehaviour
 
     private void HandleTouchInput()
     {
+        // Handle real touches
         if (Input.touchCount > 0)
         {
-            foreach (Touch touch in Input.touches)
+            for (int i = 0; i < Input.touchCount; i++)
             {
-                // Ignore if the touch ID is the joystick's or is in the excluded area
-                if (touch.fingerId == joystickTouchId || IsTouchInExcludedArea(touch.position))
-                    continue;
+                Touch touch = Input.GetTouch(i);
 
-                switch (touch.phase)
+                // Process touch only if it's the first touch (no other fingers should trigger swipe)
+                if (currentTouchId == -1) 
                 {
-                    case TouchPhase.Began:
-                        touchBeganPos = touch.position;
-                        currentTouchId = touch.fingerId;
-
-                        // Handle double-tap detection
-                        if (firstTapped && tapActive)
-                        {
-                            OnDoubleTapEvent.Invoke(); // Trigger the speed boost action
-                            ResetTap(); // Reset tap after double-tap event
-                        }
-                        else
-                        {
-                            firstTapped = true;
-                            tapActive = true;
-                            tapTimer = doubleTapTime;
-                            StartCoroutine(DoubleTapHold());
-                        }
-                        break;
-
-                    case TouchPhase.Moved:
-                    case TouchPhase.Ended:
-                        Vector2 touchEndPos = touch.position;
-                        // Check if swipe threshold is met and swipe is upward
-                        if (touchEndPos.y > touchBeganPos.y)  //touch.fingerId == currentTouchId && Vector2.Distance(touchBeganPos, touchEndPos) > swipeThreshold &&
-                        {
-                            OnSwipeUpEvent.Invoke(); // Trigger swipe-up event for jump
-                            ResetTap(); // Reset after swipe-up
-                        }
-                        break;
+                    // If we haven't started tracking any touch yet, let's track the first touch
+                    ProcessTouch(touch.fingerId, touch.position, touch.phase);
+                }
+                else if (touch.fingerId == currentTouchId)
+                {
+                    // If we're already tracking a touch, only process that touch
+                    ProcessTouch(touch.fingerId, touch.position, touch.phase);
                 }
             }
         }
+    }
 
-        // Reset tap timer if active
-        if (tapActive)
+    private void ProcessTouch(int fingerId, Vector2 position, TouchPhase phase)
+    {
+        // Ignore if touch is for joystick or within excluded areas
+        if (fingerId == joystickTouchId || IsTouchInExcludedArea(position))
+            return;
+
+        switch (phase)
         {
-            tapTimer -= Time.deltaTime;
-            if (tapTimer <= 0) tapActive = false;
+            case TouchPhase.Began:
+                touchBeganPos = position;
+                currentTouchId = fingerId;
+
+                // Handle double-tap detection
+                if (firstTapped && tapActive)
+                {
+                    OnDoubleTapEvent.Invoke();
+                    ResetTap();
+                }
+                else
+                {
+                    firstTapped = true;
+                    tapActive = true;
+                    tapTimer = doubleTapTime;
+                    StartCoroutine(DoubleTapHold());
+                }
+                break;
+
+            case TouchPhase.Moved:
+            case TouchPhase.Stationary:
+                CheckSwipeUp(fingerId, position);
+                break;
+
+            case TouchPhase.Ended:
+                CheckSwipeUp(fingerId, position);
+                if (fingerId == currentTouchId)
+                    currentTouchId = -1;
+                break;
+        }
+    }
+
+    // Method to check for swipe-up gesture
+    private void CheckSwipeUp(int fingerId, Vector2 position)
+    {
+        // Only allow swipe-up with the current touch (first touch)
+        if (fingerId == currentTouchId && position.y > touchBeganPos.y &&
+            Vector2.Distance(touchBeganPos, position) > swipeThreshold)
+        {
+            Debug.Log("Swiped up");
+            OnSwipeUpEvent.Invoke();
+            ResetTap();
         }
     }
 
@@ -85,7 +109,7 @@ public class TouchController : MonoBehaviour
     {
         firstTapped = false;
         tapActive = false;
-        //currentTouchId = -1;  // Reset touch ID to allow new actions
+        currentTouchId = -1;
     }
 
     private IEnumerator DoubleTapHold()

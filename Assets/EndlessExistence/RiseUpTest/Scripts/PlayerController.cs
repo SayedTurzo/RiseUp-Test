@@ -59,7 +59,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            charVelocity.y = 0f;  // Reset vertical velocity when grounded
+            //charVelocity.y = 0f;  // Reset vertical velocity when grounded
         }
 
         // Move player using velocity (including gravity)

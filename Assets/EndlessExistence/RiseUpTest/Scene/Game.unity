@@ -980,16 +980,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   excludeRectList:
   - {fileID: 454538168}
-  joystickTouchId: 0
+  joystickTouchId: -1
   OnSwipeUpEvent:
     m_PersistentCalls:
       m_Calls: []
   OnDoubleTapEvent:
     m_PersistentCalls:
       m_Calls: []
-  swipeThreshold: 0
-  doubleTapTime: 0.1
-  currentTouchId: 0
+  swipeThreshold: 10
+  doubleTapTime: 0.2
 --- !u!114 &849513414
 MonoBehaviour:
   m_ObjectHideFlags: 0
