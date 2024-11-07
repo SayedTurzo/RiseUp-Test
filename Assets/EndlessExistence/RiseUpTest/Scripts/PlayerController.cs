@@ -12,6 +12,11 @@ public class PlayerController : MonoBehaviour
     private Vector3 charVelocity;
     private float gravity = -9.81f;
 
+    [Header("Material")] 
+    [SerializeField] private MeshRenderer playerVisual;
+    [SerializeField] private Material _northPoleMaterial;
+    [SerializeField] private Material _southPoleMaterial;
+
     private void Start()
     {
         gameManager = FindObjectOfType<GameManager>();
@@ -75,7 +80,7 @@ public class PlayerController : MonoBehaviour
     {
         float originalSpeed = moveSpeed;
         moveSpeed *= 2;
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(0.6f);
         moveSpeed = originalSpeed;
     }
 
@@ -84,8 +89,20 @@ public class PlayerController : MonoBehaviour
         while (true)
         {
             yield return new WaitForSeconds(Random.Range(3f, 5f));
+
+            // Toggle between North and South Pole
             isNorthPole = !isNorthPole;
             Debug.Log("Pole changed: " + (isNorthPole ? "North" : "South"));
+
+            // Change material based on the current pole
+            if (isNorthPole)
+            {
+                playerVisual.material = _northPoleMaterial;
+            }
+            else
+            {
+                playerVisual.material = _southPoleMaterial;
+            }
         }
     }
 }
